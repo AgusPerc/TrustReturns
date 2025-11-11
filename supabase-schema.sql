@@ -87,7 +87,42 @@ create policy "Users can manage own portfolios"
   using (auth.uid() = user_id);
 
 -- ============================================
--- HOLDINGS TABLE (Phase 4)
+-- SUBSCRIPTIONS TABLE (Create BEFORE holdings)
+-- ============================================
+create table public.subscriptions (
+  id uuid default uuid_generate_v4() primary key,
+
+  subscriber_user_id uuid references auth.users not null,
+  creator_user_id uuid references auth.users not null,
+
+  stripe_subscription_id text unique,
+  stripe_customer_id text,
+  status text not null, -- active, canceled, past_due
+  current_period_end timestamp,
+
+  price_cents integer not null,
+
+  created_at timestamp default now(),
+  updated_at timestamp default now()
+);
+
+create index idx_subscriptions_subscriber on subscriptions(subscriber_user_id);
+create index idx_subscriptions_creator on subscriptions(creator_user_id);
+create index idx_subscriptions_stripe on subscriptions(stripe_subscription_id);
+
+-- RLS
+alter table public.subscriptions enable row level security;
+
+create policy "Users can view own subscriptions"
+  on subscriptions for select
+  using (auth.uid() = subscriber_user_id);
+
+create policy "Creators can view their subscriber list"
+  on subscriptions for select
+  using (auth.uid() = creator_user_id);
+
+-- ============================================
+-- HOLDINGS TABLE (Now subscriptions exists)
 -- ============================================
 create table public.holdings (
   id uuid default uuid_generate_v4() primary key,
@@ -135,41 +170,6 @@ create policy "Holdings visible to active subscribers"
       )
     )
   );
-
--- ============================================
--- SUBSCRIPTIONS TABLE (Phase 4)
--- ============================================
-create table public.subscriptions (
-  id uuid default uuid_generate_v4() primary key,
-
-  subscriber_user_id uuid references auth.users not null,
-  creator_user_id uuid references auth.users not null,
-
-  stripe_subscription_id text unique,
-  stripe_customer_id text,
-  status text not null, -- active, canceled, past_due
-  current_period_end timestamp,
-
-  price_cents integer not null,
-
-  created_at timestamp default now(),
-  updated_at timestamp default now()
-);
-
-create index idx_subscriptions_subscriber on subscriptions(subscriber_user_id);
-create index idx_subscriptions_creator on subscriptions(creator_user_id);
-create index idx_subscriptions_stripe on subscriptions(stripe_subscription_id);
-
--- RLS
-alter table public.subscriptions enable row level security;
-
-create policy "Users can view own subscriptions"
-  on subscriptions for select
-  using (auth.uid() = subscriber_user_id);
-
-create policy "Creators can view their subscriber list"
-  on subscriptions for select
-  using (auth.uid() = creator_user_id);
 
 -- ============================================
 -- CREATOR SUBSCRIPTIONS TABLE (Phase 5)
