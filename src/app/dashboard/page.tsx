@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ConnectBrokerButton from '@/components/connect-broker-button'
 import PortfolioMetrics from '@/components/portfolio-metrics'
+import PrivacySettings from '@/components/privacy-settings'
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -11,6 +12,13 @@ export default async function DashboardPage() {
   if (!user) {
     redirect('/login')
   }
+
+  // Get user's profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
 
   // Get user's portfolio
   const { data: portfolio } = await supabase
@@ -47,17 +55,27 @@ export default async function DashboardPage() {
           <p className="text-slate-600">Verify your investment returns</p>
         </div>
 
-        {!portfolio ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h3 className="text-lg font-semibold mb-2">Connect Your Broker</h3>
-            <p className="text-slate-600 mb-6">
-              Connect your brokerage account to calculate your verified returns
-            </p>
-            <ConnectBrokerButton />
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="md:col-span-2">
+            {!portfolio ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <h3 className="text-lg font-semibold mb-2">Connect Your Broker</h3>
+                <p className="text-slate-600 mb-6">
+                  Connect your brokerage account to calculate your verified returns
+                </p>
+                <ConnectBrokerButton />
+              </div>
+            ) : (
+              <PortfolioMetrics portfolio={portfolio} />
+            )}
           </div>
-        ) : (
-          <PortfolioMetrics portfolio={portfolio} />
-        )}
+
+          {profile && (
+            <div className="md:col-span-2">
+              <PrivacySettings profile={profile} />
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )
