@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import ConnectBrokerButton from '@/components/connect-broker-button'
 import PortfolioMetrics from '@/components/portfolio-metrics'
 import PrivacySettings from '@/components/privacy-settings'
+import ProfileEditor from '@/components/profile-editor'
 
 export default async function DashboardPage() {
   const supabase = createClient()
@@ -71,9 +72,14 @@ export default async function DashboardPage() {
           </div>
 
           {profile && (
-            <div className="md:col-span-2">
-              <PrivacySettings profile={profile} />
-            </div>
+            <>
+              <div className="md:col-span-2">
+                <PrivacySettings profile={profile} />
+              </div>
+              <div className="md:col-span-2">
+                <ProfileEditor profile={profile} />
+              </div>
+            </>
           )}
         </div>
       </main>
