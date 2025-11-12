@@ -38,7 +38,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
-          Connect your broker, prove your track record. Join value investors
+          Connect your broker, prove your track record. Join investors
           with <strong>verified returns</strong>.
         </p>
 
