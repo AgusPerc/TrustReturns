@@ -30,22 +30,25 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .from('portfolios')
     .select('*')
     .eq('user_id', profile.id)
-    .eq('show_in_leaderboard', true)
-    .single()
+    .maybeSingle()
 
-  if (!portfolio) {
+  // If user has portfolio but it's not public, don't show
+  if (portfolio && !portfolio.show_in_leaderboard) {
     notFound()
   }
 
-  // Get rank
-  const { data: allPortfolios } = await supabase
-    .from('portfolios')
-    .select('id, xirr_percent')
-    .eq('show_in_leaderboard', true)
-    .not('xirr_percent', 'is', null)
-    .order('xirr_percent', { ascending: false })
+  // Get rank (only if portfolio exists)
+  let rank = 0
+  if (portfolio) {
+    const { data: allPortfolios } = await supabase
+      .from('portfolios')
+      .select('id, xirr_percent')
+      .eq('show_in_leaderboard', true)
+      .not('xirr_percent', 'is', null)
+      .order('xirr_percent', { ascending: false })
 
-  const rank = (allPortfolios?.findIndex((p) => p.id === portfolio.id) ?? -1) + 1
+    rank = (allPortfolios?.findIndex((p) => p.id === portfolio.id) ?? -1) + 1
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -76,53 +79,65 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="mb-8">
-          <Badge variant="secondary" className="mb-4">
-            🏆 #{rank} Ranked Investor
-          </Badge>
+          {portfolio && rank > 0 && (
+            <Badge variant="secondary" className="mb-4">
+              🏆 #{rank} Ranked Investor
+            </Badge>
+          )}
           <h1 className="text-3xl font-bold mb-2">
             {profile.username ? `@${profile.username}` : profile.real_name || 'Anonymous'}
           </h1>
           <div className="flex items-center gap-4 text-slate-600">
-            <span>✓ Verified with {portfolio.institution_name}</span>
+            {portfolio && <span>✓ Verified with {portfolio.institution_name}</span>}
             <span>Member since {new Date(profile.created_at).toLocaleDateString()}</span>
           </div>
         </div>
 
         {/* Metrics */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div>
-                <p className="text-sm text-slate-600 mb-1">XIRR</p>
-                <p className="text-3xl font-bold">{portfolio.xirr_percent?.toFixed(1)}%</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {portfolio.xirr_period_months} months
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-600 mb-1">Total Return</p>
-                <p className="text-3xl font-bold">{portfolio.total_return_percent?.toFixed(1)}%</p>
-                <p className="text-xs text-slate-500 mt-1">Since start</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-600 mb-1">YTD</p>
-                <p className="text-3xl font-bold">{portfolio.ytd_return_percent?.toFixed(1)}%</p>
-                <p className="text-xs text-slate-500 mt-1">This year</p>
-              </div>
-
-              {portfolio.show_account_value && portfolio.current_value && (
+        {portfolio ? (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">Portfolio Value</p>
-                  <p className="text-3xl font-bold">
-                    ${(portfolio.current_value / 1000).toFixed(0)}k
+                  <p className="text-sm text-slate-600 mb-1">XIRR</p>
+                  <p className="text-3xl font-bold">{portfolio.xirr_percent?.toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {portfolio.xirr_period_months} months
                   </p>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
+                <div>
+                  <p className="text-sm text-slate-600 mb-1">Total Return</p>
+                  <p className="text-3xl font-bold">{portfolio.total_return_percent?.toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500 mt-1">Since start</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-slate-600 mb-1">YTD</p>
+                  <p className="text-3xl font-bold">{portfolio.ytd_return_percent?.toFixed(1)}%</p>
+                  <p className="text-xs text-slate-500 mt-1">This year</p>
+                </div>
+
+                {portfolio.show_account_value && portfolio.current_value && (
+                  <div>
+                    <p className="text-sm text-slate-600 mb-1">Portfolio Value</p>
+                    <p className="text-3xl font-bold">
+                      ${(portfolio.current_value / 1000).toFixed(0)}k
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-8">
+            <CardContent className="pt-6">
+              <div className="text-center text-slate-500">
+                <p>This investor hasn&apos;t connected their broker yet.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* About */}
         {(profile.bio || profile.strategy) && (
