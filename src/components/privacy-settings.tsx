@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -22,6 +23,8 @@ interface PrivacySettingsProps {
 export default function PrivacySettings({ profile }: PrivacySettingsProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [username, setUsername] = useState(profile.username || '')
+  const [realName, setRealName] = useState(profile.real_name || '')
   const [displayMode, setDisplayMode] = useState(profile.display_mode || 'anonymous')
   const [showInLeaderboard, setShowInLeaderboard] = useState(profile.show_in_leaderboard)
   const [showAccountValue, setShowAccountValue] = useState(profile.show_account_value)
@@ -33,6 +36,8 @@ export default function PrivacySettings({ profile }: PrivacySettingsProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          username,
+          real_name: realName,
           display_mode: displayMode,
           show_in_leaderboard: showInLeaderboard,
           show_account_value: showAccountValue,
@@ -58,6 +63,34 @@ export default function PrivacySettings({ profile }: PrivacySettingsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Username */}
+        <div className="space-y-2">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="your_username"
+          />
+          <p className="text-xs text-slate-500">
+            Required for public profile page (letters, numbers, underscores only)
+          </p>
+        </div>
+
+        {/* Real Name */}
+        <div className="space-y-2">
+          <Label htmlFor="real-name">Real Name</Label>
+          <Input
+            id="real-name"
+            value={realName}
+            onChange={(e) => setRealName(e.target.value)}
+            placeholder="John Doe"
+          />
+          <p className="text-xs text-slate-500">
+            Optional - only shown if you select &quot;Real Name&quot; as display mode
+          </p>
+        </div>
+
         {/* Display Mode */}
         <div className="space-y-2">
           <Label htmlFor="display-mode">Display As</Label>
@@ -67,10 +100,10 @@ export default function PrivacySettings({ profile }: PrivacySettingsProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="real_name">
-                Real Name {profile.real_name && `(${profile.real_name})`}
+                Real Name {realName && `(${realName})`}
               </SelectItem>
               <SelectItem value="username">
-                Username {profile.username && `(@${profile.username})`}
+                Username {username && `(@${username})`}
               </SelectItem>
               <SelectItem value="anonymous">Anonymous</SelectItem>
             </SelectContent>
